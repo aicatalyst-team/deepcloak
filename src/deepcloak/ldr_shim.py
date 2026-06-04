@@ -44,7 +44,9 @@ def _load_ldr_downloader() -> type:
     return AutoHTMLDownloader
 
 
-def make_fetch_html(*, mode, respect_robots, evidence_log, plain_fetch, stealth_fetch, robots_ok):
+def make_fetch_html(
+    *, mode, respect_robots, evidence_log, plain_fetch, stealth_fetch, robots_ok, on_event=None
+):
     # LDR may call _fetch_html more than once per URL (download / download_with_result).
     # Cache per run so we Stealth Fetch once and record exactly one Evidence Record.
     cache: dict[str, str | None] = {}
@@ -61,6 +63,8 @@ def make_fetch_html(*, mode, respect_robots, evidence_log, plain_fetch, stealth_
             robots_ok=robots_ok,
         )
         evidence_log.add(result.evidence)
+        if on_event is not None:
+            on_event(result.evidence)
         cache[url] = result.content
         return result.content
 
@@ -77,6 +81,7 @@ def install(
     plain_fetch: Any = plain_get,
     stealth_fetch: Any = None,
     robots_ok: Any = None,
+    on_event: Any = None,
 ) -> type:
     """Patch LDR's HTML downloader to route through DeepCloak. Returns the class."""
     cls = target_cls or _load_ldr_downloader()
@@ -94,6 +99,7 @@ def install(
         plain_fetch=plain_fetch,
         stealth_fetch=stealth_fetch,
         robots_ok=robots_ok,
+        on_event=on_event,
     )
     return cls
 

@@ -16,7 +16,7 @@ def _fake_result(report="# Report\nbody"):
 
 def test_cli_prints_report(monkeypatch, capsys):
     # research is imported inside main() from research_core; patch it there.
-    monkeypatch.setattr(rc, "research", lambda q, cli=None: _fake_result())
+    monkeypatch.setattr(rc, "research", lambda q, cli=None, verbose=False: _fake_result())
 
     code = cli.main(["why is the sky blue", "--depth", "quick"])
     out = capsys.readouterr().out
@@ -25,7 +25,7 @@ def test_cli_prints_report(monkeypatch, capsys):
 
 
 def test_cli_writes_out_file(monkeypatch, tmp_path):
-    monkeypatch.setattr(rc, "research", lambda q, cli=None: _fake_result("REPORT"))
+    monkeypatch.setattr(rc, "research", lambda q, cli=None, verbose=False: _fake_result("REPORT"))
     target = tmp_path / "r.md"
 
     code = cli.main(["q", "--out", str(target)])
@@ -41,7 +41,7 @@ def test_cli_no_query_prints_help():
 def test_cli_passes_flags_through(monkeypatch):
     seen = {}
 
-    def fake(q, cli=None):
+    def fake(q, cli=None, verbose=False):
         seen.update(cli or {})
         return _fake_result()
 

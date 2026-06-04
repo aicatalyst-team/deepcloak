@@ -23,17 +23,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("query", nargs="?", help="The research question.")
     p.add_argument("--depth", choices=["quick", "detailed", "report"], default="detailed")
     p.add_argument("--engine", choices=["duckduckgo", "searxng", "auto"], default=None)
+    p.add_argument("--searxng-url", dest="searxng_url", default=None,
+                   help="SearXNG instance URL (for --engine searxng)")
     p.add_argument("--stealth", choices=["auto", "always", "off"], default=None)
     p.add_argument("--respect-robots", action="store_true", dest="respect_robots")
     p.add_argument("--proxy", default=None)
-    p.add_argument("--provider", default=None)
+    p.add_argument("--provider", default=None,
+                   help="openai/anthropic/gemini/ollama/openai-endpoint")
     p.add_argument("--model", default=None)
+    p.add_argument("--base-url", dest="base_url", default=None,
+                   help="OpenAI-compatible URL (for openai-endpoint provider)")
     p.add_argument("--out", default=None, help="Write the report to this file.")
     return p
 
 
 def _cli_dict(args: argparse.Namespace) -> dict:
-    keys = ("depth", "engine", "stealth", "respect_robots", "proxy", "provider", "model", "out")
+    keys = ("depth", "engine", "stealth", "respect_robots", "proxy",
+            "provider", "model", "base_url", "searxng_url", "out")
     return {k: getattr(args, k) for k in keys if getattr(args, k) not in (None, False)}
 
 
@@ -60,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     from .research_core import research
 
     try:
-        result = research(args.query, cli=_cli_dict(args))
+        result = research(args.query, cli=_cli_dict(args), verbose=True)
     except Exception as exc:  # surface a clean message, not a traceback
         print(f"error: {exc}", file=sys.stderr)
         return 1

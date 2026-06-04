@@ -82,6 +82,8 @@ def test_to_ldr_env_maps_provider_model_and_key():
     assert env["LDR_LLM_PROVIDER"] == "anthropic"
     assert env["LDR_LLM_MODEL"] == "claude-sonnet-4-6"
     assert env["ANTHROPIC_API_KEY"] == "b"
+    # DeepCloak always fetches full pages (its reason to exist), never snippet-only.
+    assert env["LDR_SEARCH_SNIPPETS_ONLY"] == "false"
 
 
 def test_to_ldr_env_includes_searxng_url_when_set():
@@ -96,3 +98,35 @@ def test_to_ldr_env_includes_searxng_url_when_set():
 def test_invalid_stealth_mode_rejected():
     with pytest.raises(ConfigError):
         resolve(cli={"stealth": "bogus"}, env={"OPENAI_API_KEY": "x"})
+
+
+def test_openai_endpoint_requires_base_url():
+    with pytest.raises(ConfigError) as exc:
+        resolve(cli={"provider": "openai-endpoint"}, env={})
+    assert "base-url" in str(exc.value)
+
+
+def test_openai_endpoint_needs_no_key_and_maps_env():
+    s = resolve(
+        cli={
+            "provider": "openai-endpoint",
+            "base_url": "http://localhost:8080/v1",
+            "model": "qwen",
+        },
+        env={},
+    )
+    assert s.provider == "openai-endpoint"
+    assert s.api_key is None
+    env = s.to_ldr_env()
+    assert env["LDR_LLM_PROVIDER"] == "openai_endpoint"
+    assert env["LDR_LLM_OPENAI_ENDPOINT_URL"] == "http://localhost:8080/v1"
+    assert env["LDR_LLM_OPENAI_ENDPOINT_API_KEY"]  # non-empty
+    assert env["LDR_LLM_MODEL"] == "qwen"
+
+
+def test_openai_endpoint_base_url_from_env():
+    s = resolve(
+        cli={"provider": "openai-endpoint"},
+        env={"LDR_LLM_OPENAI_ENDPOINT_URL": "http://localhost:8080/v1"},
+    )
+    assert s.base_url == "http://localhost:8080/v1"

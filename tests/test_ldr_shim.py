@@ -59,6 +59,20 @@ def test_repeated_fetch_same_url_records_once_and_caches():
     uninstall(cls)
 
 
+def test_on_event_called_per_fetch():
+    log = EvidenceLog()
+    seen = []
+    cls = install(
+        evidence_log=log, mode="auto", target_cls=FakeDownloader,
+        plain_fetch=lambda u: FakeResp(status_code=403),
+        stealth_fetch=lambda u: "BYPASSED",
+        on_event=seen.append,
+    )
+    cls._fetch_html(FakeDownloader(), "http://walled.example")
+    assert len(seen) == 1 and seen[0].bypassed
+    uninstall(cls)
+
+
 def test_install_off_mode_records_without_stealth():
     log = EvidenceLog()
     called = {"stealth": False}
