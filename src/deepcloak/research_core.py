@@ -49,10 +49,25 @@ def _run_ldr(query: str, settings: Settings, rf: Any | None = None) -> str:
     return str(result)
 
 
-def research(query: str, cli: Mapping | None = None, env: Mapping | None = None) -> Result:
-    """Run a Deep Research and return the report plus Evidence Records."""
+def research(
+    query: str,
+    cli: Mapping | None = None,
+    env: Mapping | None = None,
+    verbose: bool = False,
+) -> Result:
+    """Run a Deep Research and return the report plus Evidence Records.
+
+    ``verbose=True`` streams live progress to stderr (used by the CLI)."""
+    import sys
+
     settings = resolve(cli or {}, env if env is not None else os.environ)
     os.environ.update(settings.to_ldr_env())
+
+    on_event = None
+    if verbose:
+        from .progress import stderr_printer as on_event
+
+        print(f"🔎 researching: {query}", file=sys.stderr, flush=True)
 
     evidence_log = EvidenceLog()
     try:
@@ -61,6 +76,7 @@ def research(query: str, cli: Mapping | None = None, env: Mapping | None = None)
             mode=settings.stealth_mode,
             respect_robots=settings.respect_robots,
             proxy=settings.proxy,
+            on_event=on_event,
         )
     except Exception:
         # LDR not importable yet / seam moved — proceed without stealth (degraded).
@@ -70,6 +86,13 @@ def research(query: str, cli: Mapping | None = None, env: Mapping | None = None)
     badge = evidence_log.badge()
     if badge:
         report = f"{report}\n\n{badge}"
+    if verbose:
+        s = evidence_log.summary()
+        print(
+            f"✅ done — {s['total']} sources, {s['bypassed']} bot wall(s) bypassed",
+            file=sys.stderr,
+            flush=True,
+        )
     return Result(
         report=report,
         settings=settings,
