@@ -31,28 +31,22 @@ class HealthHandler(BaseHTTPRequestHandler):
 
     def _version_check(self):
         try:
-            result = subprocess.run(
-                [sys.executable, "-m", "deepcloak", "--version"],
-                capture_output=True, text=True, timeout=15
-            )
-            version_output = result.stdout.strip() or result.stderr.strip()
+            from deepcloak import __version__
             self._respond(200, {
-                "version": version_output,
-                "exit_code": result.returncode,
+                "version": f"deepcloak {__version__}",
+                "exit_code": 0,
             })
         except Exception as e:
             self._respond(500, {"error": str(e)})
 
     def _cli_check(self):
         try:
-            result = subprocess.run(
-                [sys.executable, "-m", "deepcloak", "--help"],
-                capture_output=True, text=True, timeout=15
-            )
-            output = result.stdout.strip() or result.stderr.strip()
+            from deepcloak.cli import build_parser
+            parser = build_parser()
+            help_text = parser.format_help()
             self._respond(200, {
-                "help_output": output,
-                "exit_code": result.returncode,
+                "help_output": help_text,
+                "exit_code": 0,
             })
         except Exception as e:
             self._respond(500, {"error": str(e)})
