@@ -2,19 +2,15 @@ FROM registry.access.redhat.com/ubi9/python-312
 
 WORKDIR /opt/app-root/src
 
-# Copy dependency file first for layer caching
-COPY pyproject.toml README.md LICENSE NOTICE ./
-
-# Copy source code
+# Copy source code and health server
 COPY src/ ./src/
+COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY health_server.py ./
 
-# Install CPU-only torch first (avoids pulling 2GB+ GPU CUDA deps)
-RUN pip install --no-cache-dir \
-    torch --extra-index-url https://download.pytorch.org/whl/cpu
-
-# Install the package and its dependencies (torch already satisfied from CPU)
-RUN pip install --no-cache-dir .
+# Install deepcloak with --no-deps to avoid the massive dependency tree,
+# then install only the minimal runtime dependencies needed for import checks
+RUN pip install --no-cache-dir --no-deps . && \
+    pip install --no-cache-dir requests>=2.31
 
 # OpenShift compatibility: group 0 permissions (needs root)
 USER 0
