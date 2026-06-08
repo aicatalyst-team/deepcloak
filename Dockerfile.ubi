@@ -9,7 +9,11 @@ COPY pyproject.toml README.md LICENSE NOTICE ./
 COPY src/ ./src/
 COPY health_server.py ./
 
-# Install the package and its dependencies
+# Install CPU-only torch first (avoids pulling 2GB+ GPU CUDA deps)
+RUN pip install --no-cache-dir \
+    torch --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Install the package and its dependencies (torch already satisfied from CPU)
 RUN pip install --no-cache-dir . && \
     pip install --no-cache-dir requests>=2.31
 
