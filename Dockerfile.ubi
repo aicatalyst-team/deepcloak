@@ -14,14 +14,13 @@ RUN pip install --no-cache-dir \
     torch --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Install the package and its dependencies (torch already satisfied from CPU)
-RUN pip install --no-cache-dir . && \
-    pip install --no-cache-dir requests>=2.31
+RUN pip install --no-cache-dir .
 
-# OpenShift compatibility: group 0 permissions
+# OpenShift compatibility: group 0 permissions (needs root)
+USER 0
 RUN chgrp -R 0 /opt/app-root && chmod -R g=u /opt/app-root
+USER 1001
 
 EXPOSE 8080
-
-USER 1001
 
 CMD ["python", "health_server.py"]
