@@ -1,0 +1,23 @@
+FROM registry.access.redhat.com/ubi9/python-312
+
+WORKDIR /opt/app-root/src
+
+# Copy dependency file first for layer caching
+COPY pyproject.toml README.md LICENSE NOTICE ./
+
+# Copy source code
+COPY src/ ./src/
+COPY health_server.py ./
+
+# Install the package and its dependencies
+RUN pip install --no-cache-dir . && \
+    pip install --no-cache-dir requests>=2.31
+
+# OpenShift compatibility: group 0 permissions
+RUN chgrp -R 0 /opt/app-root && chmod -R g=u /opt/app-root
+
+EXPOSE 8080
+
+USER 1001
+
+CMD ["python", "health_server.py"]
